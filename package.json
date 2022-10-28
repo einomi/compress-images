@@ -1,0 +1,10 @@
+{
+    "scripts": {
+        "compress-images": "node scripts/compress-images.js"
+    },
+    "dependencies": {
+        "imagemin": "^7.0.1",
+        "imagemin-pngquant": "^9.0.2",
+        "sharp": "^0.30.4"
+    }
+}
