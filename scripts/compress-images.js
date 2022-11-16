@@ -11,16 +11,16 @@ const pngOptions = {
   quality: [0.5, 0.7],
 };
 
-const jpegOptions = { quality: 45 };
+const jpegOptions = { quality: 60 };
 
 const avifOptions = {
-  quality: 63,
-  effort: 7,
+  quality: 60,
+  effort: 9,
   chromaSubsampling: "4:2:0",
 };
 
 const webpOptions = {
-  quality: 75,
+  quality: 70,
   alphaQuality: 75,
   speed: 8,
   chromaSubsampling: "4:2:0",
