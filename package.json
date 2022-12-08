@@ -5,6 +5,7 @@
     "dependencies": {
         "imagemin": "^7.0.1",
         "imagemin-pngquant": "^9.0.2",
+        "prettier": "^2.8.1",
         "sharp": "^0.30.4"
     }
 }
