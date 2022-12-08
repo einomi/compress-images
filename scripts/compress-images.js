@@ -14,8 +14,8 @@ const pngOptions = {
 const jpegOptions = { quality: 60 };
 
 const avifOptions = {
-  quality: 60,
-  effort: 9,
+  quality: 55,
+  effort: 8,
   chromaSubsampling: '4:2:0',
 };
 
