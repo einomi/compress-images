@@ -22,7 +22,7 @@ const avifOptions = {
 const webpOptions = {
   quality: 70,
   alphaQuality: 75,
-  speed: 8,
+  effort: 8,
   chromaSubsampling: '4:2:0',
 };
 
