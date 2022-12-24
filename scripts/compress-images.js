@@ -11,18 +11,20 @@ const pngOptions = {
   quality: [0.5, 0.7],
 };
 
+const POSSIBLE_EXTENSIONS = ['png', 'jpeg', 'jpg'];
+
 const jpegOptions = { quality: 60 };
 
 const avifOptions = {
   quality: 55,
-  effort: 8,
+  effort: 5,
   chromaSubsampling: '4:2:0',
 };
 
 const webpOptions = {
-  quality: 70,
-  alphaQuality: 75,
-  effort: 8,
+  quality: 65,
+  alphaQuality: 77,
+  effort: 4,
   chromaSubsampling: '4:2:0',
 };
 
@@ -36,43 +38,55 @@ function getPathWithoutExtension(pathStr) {
   return pathStr.split('.').slice(0, -1).join('.');
 }
 
-function main() {
-  fs.readdir(dir, (error, filenames) => {
-    if (error) {
-      return;
-    }
-    filenames
-      .map((filename) => {
-        if (['avif', 'webp'].includes(getExtension(filename))) {
-          fs.unlink(`${dir}/${filename}`, () => {
-            console.info(`${filename} has been deleted`);
-          });
-          return '';
-        }
-        return filename;
-      })
-      .filter((filename) => {
-        return ['jpeg', 'png', 'jpg'].includes(getExtension(filename));
-      })
-      .forEach((filename) => {
-        const extension = getExtension(filename);
-        // const width = 900;
+async function main() {
+  const filenames = fs
+    .readdirSync(dir)
+    .filter((filename) =>
+      POSSIBLE_EXTENSIONS.find((extension) => filename.endsWith(extension))
+    );
 
-        sharp(path.join(dir, filename))
-          .toFormat('avif')
-          // .resize(width)
-          .avif(avifOptions)
-          .toFile(`${dir}/${getPathWithoutExtension(filename)}.avif`);
+  console.log('filenames', filenames);
 
-        sharp(path.join(dir, filename))
-          .toFormat('webp')
-          // .resize(width)
-          .webp(webpOptions)
-          .toFile(`${dir}/${getPathWithoutExtension(filename)}.webp`);
+  console.info('Files total:', filenames.length);
 
-        if (['jpg', 'jpeg'].includes(extension)) {
+  const promiseArray = [];
+
+  filenames
+    .map((filename) => {
+      if (['avif', 'webp'].includes(getExtension(filename))) {
+        fs.unlink(`${dir}/${filename}`, () => {
+          console.info(`${filename} has been deleted`);
+        });
+        return '';
+      }
+      return filename;
+    })
+    .forEach((filename) => {
+      const extension = getExtension(filename);
+      const width = undefined; // set width if you want to resize
+
+      // convert to avif
+      const promiseAvif = sharp(path.join(dir, filename))
+        .toFormat('avif')
+        .resize(width)
+        .avif(avifOptions)
+        .toFile(`${dir}/${getPathWithoutExtension(filename)}.avif`);
+
+      // convert to webp
+      const promiseWebp = sharp(path.join(dir, filename))
+        .toFormat('webp')
+        .resize(width)
+        .webp(webpOptions)
+        .toFile(`${dir}/${getPathWithoutExtension(filename)}.webp`);
+
+      promiseArray.push(promiseAvif, promiseWebp);
+
+      // resize and compress jpeg files
+      if (/^jpe?g$/.test(extension)) {
+          console.log('detected jpeg');
+        const promiseJpeg = new Promise((resolve, reject) => {
           sharp(path.join(dir, filename))
-            // .resize(width)
+            .resize(width)
             .jpeg(jpegOptions)
             .toBuffer((err, buffer) => {
               if (err) {
@@ -81,34 +95,51 @@ function main() {
               // eslint-disable-next-line max-nested-callbacks
               fs.writeFile(`${dir}/${filename}`, buffer, (writeErr) => {
                 if (writeErr) {
-                  throw new Error(writeErr.message);
+                  reject(writeErr.message);
+                } else {
+                  resolve();
                 }
               });
             });
-        }
+        });
 
-        // only resize for png
-        // if (extension === 'png') {
-        //   sharp(path.join(dir, filename))
-        //     .resize(width)
-        //     .png()
-        //     .toBuffer((err, buffer) => {
-        //       if (err) {
-        //         throw new Error(err.message);
-        //       }
-        //       // eslint-disable-next-line max-nested-callbacks
-        //       fs.writeFileSync(path.join(dir, filename), buffer, (writeErr) => {
-        //         if (writeErr) {
-        //           throw new Error(writeErr.message);
-        //         }
-        //       });
-        //     });
-        // }
-      });
-  });
+        promiseArray.push(promiseJpeg);
+      }
 
-  // Optimizing .png files
-  imagemin([`${dir}/**/*.png`], {
+      // only resize for png files, we are compressing them later
+      // in this script by imagemin (better results than by sharp)
+      if (extension === 'png' && width) {
+        const promisePng = new Promise((resolve, reject) => {
+          sharp(path.join(dir, filename))
+            .resize(width)
+            .png()
+            .toBuffer((err, buffer) => {
+              if (err) {
+                console.log('err.message', err.message);
+                reject(err.message);
+              }
+              // eslint-disable-next-line max-nested-callbacks
+              fs.writeFile(path.join(dir, filename), buffer, (writeErr) => {
+                if (writeErr) {
+                  console.log('writeErr', writeErr);
+                  reject(writeErr.message);
+                } else {
+                  resolve();
+                }
+              });
+            });
+        });
+
+        promiseArray.push(promisePng);
+      }
+    });
+
+  await Promise.all(promiseArray);
+
+  console.info('Now compressing pngs');
+
+  // optimizing .png files
+  await imagemin([`${dir}/**/*.png`], {
     destination: dir,
     plugins: [imageminPngquant(pngOptions)],
   });
