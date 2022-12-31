@@ -10,7 +10,7 @@ const POSSIBLE_EXTENSIONS = ['png', 'jpeg', 'jpg'];
 
 /***************************
 *
-*  Image quality settings
+*  Image Quality Settings
 *
 ***************************/
 
@@ -33,11 +33,11 @@ const webpOptions = {
   chromaSubsampling: '4:2:0',
 };
 
-/***************************
+/*********************
 *
-*  Helper functions
+*  Helper Functions
 *
-***************************/
+**********************/
 
 /** @param {string} filename */
 function getExtension(filename) {
@@ -49,11 +49,11 @@ function getPathWithoutExtension(pathStr) {
   return pathStr.split('.').slice(0, -1).join('.');
 }
 
-/***************************
+/*************************
 *
-*  Compress images script
+*  Compress Images Script
 *
-***************************/
+**************************/
 
 async function main() {
   const filenames = fs
@@ -62,9 +62,9 @@ async function main() {
       POSSIBLE_EXTENSIONS.find((extension) => filename.endsWith(extension))
     );
 
-  console.log('filenames', filenames);
-
   console.info('Files total:', filenames.length);
+
+  console.info('Converting to .avif, .webp and compressing jpeg images...');
 
   const promiseArray = [];
 
@@ -100,7 +100,6 @@ async function main() {
 
       // resize and compress jpeg files
       if (/^jpe?g$/.test(extension)) {
-          console.log('detected jpeg');
         const promiseJpeg = new Promise((resolve, reject) => {
           sharp(path.join(DIRECTORY, filename))
             .resize(width)
@@ -153,13 +152,15 @@ async function main() {
 
   await Promise.all(promiseArray);
 
-  console.info('Now compressing pngs');
+  console.info('Now compressing .png files...');
 
   // optimizing .png files
   await imagemin([`${DIRECTORY}/**/*.png`], {
     destination: DIRECTORY,
     plugins: [imageminPngquant(pngOptions)],
   });
+
+  console.info('Done!');
 }
 
 main();
