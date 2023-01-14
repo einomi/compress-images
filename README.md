@@ -10,7 +10,7 @@ All are images converted and compressed using `sharp` library. The .png files ar
 
 ## Compressing images
 
-Simply put your images to images/ folder and run `npm run compress-images`. After than, you should get the compressed images in the same directory.
+Simply put your images to `images/` folder and run `npm run compress-images`. After than, you should get the compressed images in the same directory.
 
 ## Changing settings
 
